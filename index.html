@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SmartBus Prototype</title>
+<style>
+  :root{
+    --bg:#0E1013; --panel:#15181D; --panel2:#1D2025; --border:#22262C;
+    --text:#EDEEF0; --muted:#9CA3AF; --accent:#22D3A6; --accent-ink:#08201A;
+    --danger:#EF5350; --danger-bg:#2E1518; --warn:#F2B544; --warn-bg:#2E2210;
+    font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  button{font-family:inherit;cursor:pointer}
+  input,select{font-family:inherit}
+  .tabs{display:flex;gap:6px;padding:14px 18px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:5;overflow-x:auto}
+  .tab{background:transparent;border:1px solid var(--border);color:var(--muted);padding:9px 16px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap}
+  .tab.active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+  .wrap{max-width:1100px;margin:0 auto;padding:20px 18px 60px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px}
+  .muted{color:var(--muted)}
+  .row{display:flex;justify-content:space-between;align-items:center}
+  .pill{font-size:11px;font-weight:700;border-radius:999px;padding:4px 10px;display:inline-block}
+  .pill-accent{color:var(--accent);border:1px solid var(--accent)}
+  .pill-danger{color:#F3A79F;border:1px solid var(--danger)}
+  .pill-warn{color:var(--warn);border:1px solid var(--warn)}
+  .btn{border:none;border-radius:9px;padding:11px 16px;font-size:14px;font-weight:700}
+  .btn-accent{background:var(--accent);color:var(--accent-ink)}
+  .btn-ghost{background:transparent;border:1px solid #3A3E45;color:var(--text)}
+  .btn-ghost:disabled{opacity:.4;cursor:not-allowed}
+  h1{font-size:15px;margin:0}
+  h2{font-size:12px;letter-spacing:.04em;color:var(--muted);margin:0 0 10px;text-transform:none}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  @media (max-width:720px){.grid2,.grid3{grid-template-columns:1fr}}
+  .busline{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;padding:13px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .qr{width:72px;height:72px;border-radius:8px;flex-shrink:0;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(6,1fr);overflow:hidden;background:#fff}
+  .qr div{background:#fff}
+  .qr div.on{background:#0E1013}
+  .mapwrap{position:relative;background:
+      linear-gradient(#171A1F 1px,transparent 1px) 0 0/40px 40px,
+      linear-gradient(90deg,#171A1F 1px,transparent 1px) 0 0/40px 40px,#0E1013;
+    border:1px solid var(--border);border-radius:14px;overflow:hidden;padding-bottom:36px}
+  .lane{position:relative;height:118px}
+  .lane+.lane{border-top:1px solid #171A1F}
+  .lanelabel{position:absolute;left:18px;top:10px;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.03em}
+  .stopline{position:absolute;left:5%;right:5%;height:2px;background:#2A2D33}
+  .stopdot{position:absolute;width:8px;height:8px;border-radius:999px;background:#3A3E45;transform:translate(-50%,-50%)}
+  .stoplabel{position:absolute;font-size:10px;color:var(--muted);transform:translateX(-50%);white-space:nowrap}
+  .busmarker{position:absolute;transform:translate(-50%,-50%);border-radius:999px;padding:5px 11px;font-size:12px;font-weight:700;border:1.5px solid;cursor:pointer;transition:left 1.2s linear;white-space:nowrap}
+  .bm-ok{background:#16271F;border-color:var(--accent);color:#7FE3AE}
+  .bm-bad{background:var(--danger-bg);border-color:#B3463F;color:#F3A79F;box-shadow:0 0 0 4px rgba(179,70,63,.15)}
+  .bm-warn{background:var(--warn-bg);border-color:#C98A1C;color:#F2C664;box-shadow:0 0 0 4px rgba(201,138,28,.15)}
+  .legend{position:absolute;left:18px;bottom:10px;background:#15181D;border:1px solid #22262C;border-radius:10px;padding:8px 13px;display:flex;gap:14px;font-size:11px;color:var(--muted)}
+  select{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:14px;width:100%}
+  label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--accent-ink);padding:12px 20px;border-radius:10px;font-weight:700;font-size:13px;box-shadow:0 6px 24px rgba(0,0,0,.4);z-index:50;display:none}
+  .seatbox{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:4px;max-width:260px}
+  .seat{aspect-ratio:1;border-radius:5px;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:700}
+  .seat-empty{background:#1D2025;border:1px solid #2E323A;color:#6B7280}
+  .seat-booked{background:var(--accent);color:var(--accent-ink)}
+</style>
+</head>
+<body>
+<div class="tabs" id="tabs"></div>
+<div class="wrap" id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const ROUTES = [
+  { key:'A', name:'Notun Bazar \u2013 Paltan', stops:["Notun Bazar","Badda","Rampura","Malibagh","Mogbazar","Kakrail","Paltan"] },
+  { key:'B', name:'Mirpur 10 \u2013 Motijheel',   stops:["Mirpur 10","Agargaon","Farmgate","Karwan Bazar","Shahbagh","Paltan","Motijheel"] },
+  { key:'C', name:'Uttara \u2013 Jatrabari',      stops:["Uttara","Airport","Banani","Mohakhali","Mogbazar","Rajarbagh","Jatrabari"] },
+];
+function routeOf(key){ return ROUTES.find(r=>r.key===key); }
+function stopsOf(bus){ return routeOf(bus.routeKey).stops; }
+
+const SEATS_PER_BUS = 16; // 4 rows (A-D) x 4 seats, matches local Dhaka bus 2+2 layout
+const FARE_PER_STOP = 5;
+const SPEED_LIMIT = 30; // km/h - approx. DMP 2026 urban-road limit for Dhaka city
+
+function seatLabel(id){
+  const row = Math.floor((id-1)/4);
+  const num = ((id-1)%4)+1;
+  return String.fromCharCode(65+row)+num;
+}
+
+function makeSeats(bookedCount, stopsLen){
+  const seats = [];
+  for(let i=0;i<SEATS_PER_BUS;i++) seats.push({id:i+1, status:'empty', toIdx:null, fromIdx:null, ticketId:null});
+  for(let i=0;i<bookedCount;i++){ seats[i].status='booked'; seats[i].toIdx = Math.min(stopsLen-1, 3+(i%3)); }
+  return seats;
+}
+
+const state = {
+  view: 'passenger',
+  wallet: 500,
+  nextTicketId: 1001,
+  tickets: [],
+  smsLog: [],
+  reports: [],
+  selectedControlBus: 1,
+  passengerForm: { routeKey:'A', from: 0, to: 2 },
+  driverBusId: 1,
+  buses: [
+    { id:1, number:'572', operator:'Turag', routeKey:'A', posIdx:0, dir:1, baseSpeed:24, speed:24, routeStatus:'on-route', driverId:'D-2291', driverPhone:'01819-40226683', seats:makeSeats(9, 7) },
+    { id:2, number:'341', operator:'Raida', routeKey:'B', posIdx:2, dir:1, baseSpeed:26, speed:26, routeStatus:'on-route', driverId:'D-0892', driverPhone:'01712-66453017', seats:makeSeats(5, 7) },
+    { id:3, number:'118', operator:'Victor Classic', routeKey:'A', posIdx:4, dir:-1, baseSpeed:37, speed:37, routeStatus:'on-route', driverId:'D-1147', driverPhone:'01788-22014759', seats:makeSeats(12, 7) },
+    { id:4, number:'877', operator:'Bikash Paribahan', routeKey:'C', posIdx:1, dir:1, baseSpeed:23, speed:23, routeStatus:'on-route', driverId:'D-3390', driverPhone:'01911-55682042', seats:makeSeats(7, 7) },
+  ]
+};
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display='block';
+  clearTimeout(t._h); t._h = setTimeout(()=>t.style.display='none', 2800);
+}
+function beep(){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = 880; g.gain.value = 0.05;
+    o.start(); setTimeout(()=>{o.stop(); ctx.close();}, 180);
+  }catch(e){}
+}
+
+function fareFor(fromIdx, toIdx){ return Math.abs(toIdx-fromIdx) * FARE_PER_STOP; }
+
+function bookSeat(busId, fromIdx, toIdx, seatId){
+  const bus = state.buses.find(b=>b.id===busId);
+  if(fromIdx===toIdx){ toast('Origin and destination must differ'); return; }
+  if(state.tickets.filter(t=>t.busId===busId).length >= 2){ toast('Limit reached: 2 tickets per bus per account'); return; }
+  const seat = seatId ? bus.seats.find(s=>s.id===seatId && s.status==='empty') : bus.seats.find(s=>s.status==='empty');
+  if(!seat){ toast(seatId ? 'Seat no longer available' : 'No seats left on Bus '+bus.number); return; }
+  const fare = fareFor(fromIdx, toIdx);
+  if(state.wallet < fare){ toast('Insufficient wallet balance'); return; }
+  state.wallet -= fare;
+  seat.status='booked'; seat.toIdx=toIdx; seat.fromIdx=fromIdx;
+  const label = seatLabel(seat.id);
+  const ticket = { id: 't'+(state.nextTicketId++), busId, busNumber:bus.number, seatId:seat.id, seatLabel:label, fromIdx, toIdx, fare, notified:false };
+  seat.ticketId = ticket.id;
+  state.tickets.push(ticket);
+  state.smsLog.unshift(`SMS -> Ticket ${ticket.id.toUpperCase()}, Bus ${bus.number}, Seat ${label}, Stop ${stopsOf(bus)[fromIdx]}`);
+  toast('Booked seat '+label+' on Bus '+bus.number);
+  render();
+}
+
+function releaseSeat(busId, seatId, bySystem){
+  const bus = state.buses.find(b=>b.id===busId);
+  const seat = bus.seats.find(s=>s.id===seatId);
+  if(!seat || seat.status!=='booked') return;
+  const ticket = state.tickets.find(t=>t.id===seat.ticketId);
+  seat.status='empty'; seat.toIdx=null; seat.fromIdx=null; seat.ticketId=null;
+  if(ticket) state.tickets = state.tickets.filter(t=>t.id!==ticket.id);
+  if(!bySystem) toast('Seat '+seatLabel(seatId)+' released on Bus '+bus.number);
+  render();
+}
+
+function reportPassenger(busId){
+  const bus = state.buses.find(b=>b.id===busId);
+  state.reports.unshift({ bus: bus.number, note: 'Passenger forced an unscheduled stop' });
+  toast('Reported on Bus '+bus.number);
+  render();
+}
+
+function toggleBusFault(busId){
+  const bus = state.buses.find(b=>b.id===busId);
+  bus.routeStatus = bus.routeStatus==='on-route' ? 'off-route' : 'on-route';
+  render();
+}
+
+// ---- simulation tick: move buses, vary speed, auto-release seats on arrival, notify approaching passengers ----
+setInterval(()=>{
+  state.buses.forEach(bus=>{
+    const len = stopsOf(bus).length;
+    bus.posIdx += bus.dir;
+    if(bus.posIdx >= len-1){ bus.posIdx = len-1; bus.dir = -1; }
+    if(bus.posIdx <= 0){ bus.posIdx = 0; bus.dir = 1; }
+    bus.speed = Math.max(8, Math.round(bus.baseSpeed + (Math.random()*10-5)));
+    bus.seats.forEach(seat=>{
+      if(seat.status!=='booked') return;
+      if(seat.toIdx===bus.posIdx){
+        releaseSeat(bus.id, seat.id, true);   // passenger alights at the destination stop
+        return;
+      }
+      const ticket = state.tickets.find(t=>t.id===seat.ticketId);
+      if(ticket && !ticket.notified && bus.posIdx + bus.dir === seat.toIdx){
+        ticket.notified = true;               // next stop is the destination
+        toast('Bus '+bus.number+': next stop is your destination, '+stopsOf(bus)[seat.toIdx]);
+        beep();
+      }
+    });
+  });
+  render();
+}, 3500);
+
+// ---------------- rendering ----------------
+function render(){
+  renderTabs();
+  const app = document.getElementById('app');
+  if(state.view==='passenger') app.innerHTML = renderPassenger();
+  else if(state.view==='driver') app.innerHTML = renderDriver();
+  else app.innerHTML = renderControl();
+  wireEvents();
+}
+
+function renderTabs(){
+  const tabs = document.getElementById('tabs');
+  const defs = [['passenger','Passenger App'],['driver','Driver Dashboard'],['control','Control Room']];
+  tabs.innerHTML = defs.map(([k,label])=>
+    `<button class="tab ${state.view===k?'active':''}" data-view="${k}">${label}</button>`
+  ).join('');
+}
+
+function renderPassenger(){
+  const f = state.passengerForm;
+  const stops = routeOf(f.routeKey).stops;
+  const routeOptions = ROUTES.map(r=>`<option value="${r.key}" ${r.key===f.routeKey?'selected':''}>${r.name}</option>`).join('');
+  const options = stops.map((s,i)=>`<option value="${i}" ${i==f.from?'selected':''}>${s}</option>`).join('');
+  const optionsTo = stops.map((s,i)=>`<option value="${i}" ${i==f.to?'selected':''}>${s}</option>`).join('');
+  const busesHtml = state.buses.filter(b=>b.routeKey===f.routeKey).map(bus=>{
+    const dist = Math.abs(bus.posIdx - f.from);
+    const seatsLeft = bus.seats.filter(s=>s.status==='empty').length;
+    const disabled = seatsLeft===0 || f.from===f.to;
+    return `<div class="busline">
+      <div>
+        <div style="font-weight:700">Bus ${bus.number} &middot; ${bus.operator}</div>
+        <div class="muted" style="font-size:12px;margin-top:2px">${dist===0?'At your stop':dist+' stop(s) away'} &middot; ${seatsLeft} seats left</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-weight:700">Tk ${fareFor(f.from,f.to)}</div>
+        <button class="btn btn-accent" style="margin-top:6px;padding:7px 14px;font-size:13px" ${disabled?'disabled':''} data-book="${bus.id}">Book</button>
+      </div>
+    </div>`;
+  }).join('') || `<div class="muted" style="font-size:13px">No buses currently serve this route.</div>`;
+
+  const pb = state.buses.find(b=>b.id===f.pick);
+  const pickerHtml = pb ? `<div class="card" style="margin-top:10px"><h2>CHOOSE YOUR SEAT &middot; Bus ${pb.number}</h2><div class="seatbox">${pb.seats.map(s=>`<div class="seat ${s.status==='booked'?'seat-booked':'seat-empty'}" ${s.status==='empty'?`data-pickseat="${s.id}"`:''}>${seatLabel(s.id)}</div>`).join('')}</div></div>` : '';
+  const smsHtml = state.smsLog.length ? `<div class="card" style="margin-top:10px"><h2>SMS CONFIRMATIONS</h2>${state.smsLog.slice(0,3).map(m=>`<div class="muted" style="font-size:12px;margin-top:4px">${m}</div>`).join('')}</div>` : '';
+  const activeTickets = state.tickets.map(t=>{
+    const qrCells = Array.from({length:36}).map((_,i)=>{
+      const on = ((i*7 + parseInt(t.id.replace(/\D/g,''))) % 5) < 2;
+      return `<div class="${on?'on':''}"></div>`;
+    }).join('');
+    const bus = state.buses.find(b=>b.id===t.busId);
+    const stopsB = stopsOf(bus);
+    return `<div class="card" style="background:#0F2E2A;border-color:#1F4A3E;margin-top:10px">
+      <div style="display:flex;gap:14px;align-items:center">
+        <div class="qr">${qrCells}</div>
+        <div style="flex:1">
+          <div style="font-size:11px;color:#9BD8C4">ACTIVE TICKET &middot; ${t.id.toUpperCase()}</div>
+          <div style="font-weight:700;font-size:15px;margin-top:2px">Bus ${t.busNumber} &middot; Seat ${t.seatLabel}</div>
+          <div style="font-size:13px;color:#BFE9D9">${stopsB[t.fromIdx]} &rarr; ${stopsB[t.toIdx]}</div>
+        </div>
+        <div style="text-align:right;font-size:12px;color:#9BD8C4">Tk ${t.fare}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="row" style="margin-bottom:16px">
+    <h1>Smart Bus &middot; Passenger</h1>
+    <div class="pill" style="background:#1D2025;border:1px solid var(--border)">Wallet: Tk ${state.wallet}</div>
+  </div>
+  <div class="card">
+    <h2>PLAN YOUR TRIP</h2>
+    <div style="margin-bottom:12px"><label>Route</label><select id="routeSel">${routeOptions}</select></div>
+    <div class="grid2">
+      <div><label>From</label><select id="fromSel">${options}</select></div>
+      <div><label>To</label><select id="toSel">${optionsTo}</select></div>
+    </div>
+  </div>
+  <div style="margin-top:18px;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.04em">AVAILABLE BUSES</div>
+  <div style="margin-top:10px">${busesHtml}</div>
+  ${pickerHtml}
+  ${activeTickets}
+  ${smsHtml}
+  `;
+}
+
+function renderDriver(){
+  const bus = state.buses.find(b=>b.id===state.driverBusId);
+  const stops = stopsOf(bus);
+  const nextIdx = Math.min(stops.length-1, bus.posIdx + bus.dir);
+  const boarding = bus.seats.filter(s=>s.status==='booked' && s.fromIdx===nextIdx).length;  // from actual bookings
+  const alighting = bus.seats.filter(s=>s.status==='booked' && s.toIdx===nextIdx).length;
+  const seatsHtml = bus.seats.map(s=>{
+    const lbl = seatLabel(s.id);
+    return `<div class="seat ${s.status==='booked'?'seat-booked':'seat-empty'}" data-seat="${s.id}" title="Seat ${lbl}${s.status==='booked'?' -> '+stops[s.toIdx]:''}">${lbl}</div>`;
+  }).join('');
+  const busOptions = state.buses.map(b=>`<option value="${b.id}" ${b.id===bus.id?'selected':''}>Bus ${b.number} &middot; Route ${b.routeKey}</option>`).join('');
+  const overspeed = bus.speed > SPEED_LIMIT;
+
+  return `
+  <div class="row" style="margin-bottom:16px">
+    <h1>Driver Dashboard</h1>
+    <select id="driverBusSel" style="width:190px">${busOptions}</select>
+  </div>
+  <div class="card">
+    <div class="row" style="align-items:flex-start">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div style="font-size:22px;font-weight:700">Bus ${bus.number}</div>
+          <span class="pill pill-accent">ROUTE LOCKED</span>
+          <span class="pill ${overspeed?'pill-warn':'pill-accent'}">${bus.speed} km/h${overspeed?' \u00b7 OVER LIMIT':''}</span>
+        </div>
+        <div class="muted" style="margin-top:6px;font-size:14px">${stops[0]} &rarr; ${stops[stops.length-1]} &middot; currently at ${stops[bus.posIdx]}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="muted" style="font-size:11px">SEATS BOOKED</div>
+        <div style="font-size:22px;font-weight:700">${bus.seats.filter(s=>s.status==='booked').length} / ${SEATS_PER_BUS}</div>
+      </div>
+    </div>
+  </div>
+  <div class="grid2" style="margin-top:14px">
+    <div class="card">
+      <h2>NEXT STOP: ${stops[nextIdx]}</h2>
+      <div style="display:flex;gap:26px">
+        <div><div style="font-size:21px;font-weight:700;color:var(--accent)">${boarding}</div><div class="muted" style="font-size:11px">boarding</div></div>
+        <div><div style="font-size:21px;font-weight:700">${alighting}</div><div class="muted" style="font-size:11px">alighting</div></div>
+      </div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:8px;justify-content:center">
+      <button class="btn btn-ghost" id="reportBtn">Report passenger violation</button>
+      <div class="muted" style="font-size:11px">Manually release a booked seat below</div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h2>SEAT MAP &middot; rows A-D (tap a booked seat to release it)</h2>
+    <div class="seatbox" id="seatbox">${seatsHtml}</div>
+  </div>
+  `;
+}
+
+function renderControl(){
+  const sel = state.buses.find(b=>b.id===state.selectedControlBus) || state.buses[0];
+  const LANE_H = 118, LINE_Y = 76;
+
+  const lanes = ROUTES.map(route=>{
+    const busesOnRoute = state.buses.filter(b=>b.routeKey===route.key);
+    const stops = route.stops;
+    const stopEls = stops.map((s,i)=>{
+      const pct = 5 + (i/(stops.length-1))*90;
+      return `<div class="stopdot" style="left:${pct}%;top:${LINE_Y}px"></div><div class="stoplabel" style="left:${pct}%;top:${LINE_Y+12}px">${s}</div>`;
+    }).join('');
+    const markers = busesOnRoute.map(bus=>{
+      const pct = 5 + (bus.posIdx/(stops.length-1))*90;
+      const overspeed = bus.speed > SPEED_LIMIT;
+      const cls = bus.routeStatus==='off-route' ? 'bm-bad' : (overspeed ? 'bm-warn' : 'bm-ok');
+      return `<div class="busmarker ${cls}" style="left:${pct}%;top:${LINE_Y}px" data-select="${bus.id}">${bus.number} &middot; ${bus.speed}</div>`;
+    }).join('');
+    return `<div class="lane">
+      <div class="lanelabel">ROUTE ${route.key} &middot; ${route.name}</div>
+      <div class="stopline" style="top:${LINE_Y}px"></div>
+      ${stopEls}
+      ${markers}
+    </div>`;
+  }).join('');
+
+  const offRoute = state.buses.filter(b=>b.routeStatus==='off-route');
+  const overspeeding = state.buses.filter(b=>b.speed > SPEED_LIMIT);
+
+  const alerts = offRoute.map(b=>
+    `<div class="card" style="border-left:3px solid var(--danger);padding:11px 13px;margin-bottom:8px">
+      <div class="row"><div style="font-weight:700;font-size:13px">Bus ${b.number} &middot; ${b.driverId}</div></div>
+      <div class="muted" style="font-size:11.5px;margin-top:3px">Off permitted route (Route ${b.routeKey})</div>
+      <div class="row" style="margin-top:7px">
+        <div class="muted" style="font-size:11.5px">${b.driverPhone}</div>
+        <button class="btn btn-ghost" style="padding:4px 9px;font-size:11px">Call</button>
+      </div>
+    </div>`
+  ).join('') || `<div class="muted" style="font-size:13px">No route-permit alerts.</div>`;
+
+  const speedAlerts = overspeeding.map(b=>
+    `<div class="card" style="border-left:3px solid var(--warn);padding:11px 13px;margin-bottom:8px">
+      <div class="row"><div style="font-weight:700;font-size:13px">Bus ${b.number} &middot; ${b.driverId}</div></div>
+      <div class="muted" style="font-size:11.5px;margin-top:3px">${b.speed} km/h in a ${SPEED_LIMIT} km/h zone (Route ${b.routeKey})</div>
+      <div class="row" style="margin-top:7px">
+        <div class="muted" style="font-size:11.5px">${b.driverPhone}</div>
+        <button class="btn btn-ghost" style="padding:4px 9px;font-size:11px">Call</button>
+      </div>
+    </div>`
+  ).join('') || `<div class="muted" style="font-size:13px">No buses currently over the speed limit.</div>`;
+
+  const reports = state.reports.map(r=>
+    `<div class="card" style="border-left:3px solid var(--warn);padding:11px 13px;margin-bottom:8px">
+      <div style="font-weight:700;font-size:13px">Bus ${r.bus}</div>
+      <div class="muted" style="font-size:11.5px;margin-top:3px">${r.note}</div>
+    </div>`
+  ).join('') || `<div class="muted" style="font-size:13px">No reports yet.</div>`;
+
+  const occ = Math.round(sel.seats.filter(s=>s.status==='booked').length / SEATS_PER_BUS * 100);
+  const selOverspeed = sel.speed > SPEED_LIMIT;
+
+  return `
+  <div class="row" style="margin-bottom:16px;flex-wrap:wrap;gap:10px">
+    <h1>Control Room &middot; Live Fleet (${ROUTES.length} routes)</h1>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <div class="pill" style="background:#1D2025;border:1px solid var(--border)">Online: ${state.buses.length}</div>
+      <div class="pill" style="background:#1D2025;border:1px solid var(--border)">Route alerts: ${offRoute.length}</div>
+      <div class="pill" style="background:#1D2025;border:1px solid var(--border)">Overspeed: ${overspeeding.length}</div>
+      <button class="btn btn-ghost" id="faultBtn" style="padding:6px 12px;font-size:12px">Simulate Bus 118 route deviation</button>
+    </div>
+  </div>
+  <div class="mapwrap">
+    ${lanes}
+    <div class="legend">
+      <div><span style="color:var(--accent)">&#9679;</span> On-route, normal speed</div>
+      <div><span style="color:var(--warn)">&#9679;</span> Over speed limit</div>
+      <div><span style="color:#F3A79F">&#9679;</span> Off permitted route</div>
+    </div>
+  </div>
+  <div class="grid2" style="margin-top:16px">
+    <div>
+      <h2 style="margin-top:4px">ROUTE ALERTS</h2>
+      ${alerts}
+      <h2 style="margin-top:16px">OVERSPEED ALERTS (limit ${SPEED_LIMIT} km/h)</h2>
+      ${speedAlerts}
+      <h2 style="margin-top:16px">PASSENGER REPORTS</h2>
+      ${reports}
+    </div>
+    <div class="card">
+      <h2>SELECTED BUS</h2>
+      <div class="row" style="flex-wrap:wrap;gap:6px">
+        <div style="font-weight:700;font-size:17px">Bus ${sel.number}</div>
+        <div style="display:flex;gap:6px">
+          <span class="pill ${sel.routeStatus==='off-route'?'pill-danger':'pill-accent'}">${sel.routeStatus.toUpperCase()}</span>
+          <span class="pill ${selOverspeed?'pill-warn':'pill-accent'}">${sel.speed} km/h</span>
+        </div>
+      </div>
+      <div class="muted" style="font-size:13px;margin-top:6px">Route ${sel.routeKey} &middot; ${routeOf(sel.routeKey).name}</div>
+      <div class="row" style="font-size:13px;margin-top:8px"><span class="muted">Current stop</span><span style="font-weight:600">${routeOf(sel.routeKey).stops[sel.posIdx]}</span></div>
+      <div class="row" style="font-size:13px;margin-top:7px"><span class="muted">Next stop</span><span style="font-weight:600">${routeOf(sel.routeKey).stops[Math.min(routeOf(sel.routeKey).stops.length-1, Math.max(0, sel.posIdx+sel.dir))]}</span></div>
+      <div style="height:1px;background:var(--border);margin:12px 0"></div>
+      <div class="row" style="font-size:13px"><span class="muted">Driver</span><span style="font-weight:600">${sel.driverId}</span></div>
+      <div class="row" style="font-size:13px;margin-top:7px"><span class="muted">Contact</span><span style="font-weight:600">${sel.driverPhone}</span></div>
+      <div class="row" style="font-size:13px;margin-top:7px"><span class="muted">Seats</span><span style="font-weight:600">${sel.seats.filter(s=>s.status==='booked').length} / ${SEATS_PER_BUS}</span></div>
+      <div style="height:6px;background:#23262C;border-radius:999px;overflow:hidden;margin-top:8px">
+        <div style="width:${occ}%;height:100%;background:var(--accent)"></div>
+      </div>
+    </div>
+  </div>
+  `;
+}
+
+function wireEvents(){
+  document.querySelectorAll('[data-view]').forEach(el=>{
+    el.onclick = ()=>{ state.view = el.dataset.view; render(); };
+  });
+  const routeSel = document.getElementById('routeSel');
+  if(routeSel) routeSel.onchange = e=>{ state.passengerForm.routeKey = e.target.value; state.passengerForm.pick=null; state.passengerForm.from=0; state.passengerForm.to=Math.min(2, routeOf(e.target.value).stops.length-1); render(); };
+  const fromSel = document.getElementById('fromSel');
+  const toSel = document.getElementById('toSel');
+  if(fromSel) fromSel.onchange = e=>{ state.passengerForm.from = +e.target.value; render(); };
+  if(toSel) toSel.onchange = e=>{ state.passengerForm.to = +e.target.value; render(); };
+  document.querySelectorAll('[data-book]').forEach(el=>{
+    el.onclick = ()=>{ state.passengerForm.pick = +el.dataset.book; render(); };
+  });
+  document.querySelectorAll('[data-pickseat]').forEach(el=>{
+    el.onclick = ()=>{ const b = state.passengerForm.pick; state.passengerForm.pick = null; bookSeat(b, state.passengerForm.from, state.passengerForm.to, +el.dataset.pickseat); };
+  });
+  const driverSel = document.getElementById('driverBusSel');
+  if(driverSel) driverSel.onchange = e=>{ state.driverBusId = +e.target.value; render(); };
+  const reportBtn = document.getElementById('reportBtn');
+  if(reportBtn) reportBtn.onclick = ()=> reportPassenger(state.driverBusId);
+  const seatbox = document.getElementById('seatbox');
+  if(seatbox) seatbox.querySelectorAll('.seat-booked').forEach(el=>{
+    el.onclick = ()=> releaseSeat(state.driverBusId, +el.dataset.seat, false);
+  });
+  document.querySelectorAll('[data-select]').forEach(el=>{
+    el.onclick = ()=>{ state.selectedControlBus = +el.dataset.select; render(); };
+  });
+  const faultBtn = document.getElementById('faultBtn');
+  if(faultBtn) faultBtn.onclick = ()=> toggleBusFault(3);
+}
+
+render();
+</script>
+</body>
+</html>
